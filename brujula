@@ -1,0 +1,68 @@
+from microbit import *
+
+# ------------------------------------------------------------
+# Brújula para micro:bit
+#  - Al iniciar: rutina de calibración
+#  - Botón A: activa / desactiva la brújula
+#  - Botón B: recalibra
+# ------------------------------------------------------------
+
+
+def calibrar():
+    """Calibra la brújula. Hay que inclinar la placa para que el punto
+    de la pantalla recorra y llene un círculo."""
+    display.scroll("Gira la placa", delay=80)
+    compass.calibrate()          # Rutina interactiva de calibración
+    display.show(Image.YES)      # Calibración terminada
+    sleep(1000)
+    display.clear()
+
+
+def direccion_cardinal(grados):
+    """Convierte grados (0-360) en punto cardinal."""
+    puntos = ["N", "NE", "E", "SE", "S", "SO", "O", "NO"]
+    indice = int(((grados + 22.5) % 360) // 45)
+    return puntos[indice]
+
+
+def mostrar_brujula():
+    """Lee el rumbo y dibuja una aguja que apunta al norte magnético."""
+    rumbo = compass.heading()                        # 0-359 grados
+    aguja = ((15 - rumbo) // 30) % 12                # 12 posiciones de reloj
+    display.show(Image.ALL_CLOCKS[int(aguja)])
+
+    # Datos del campo magnético por el puerto serie (opcional)
+    print("Rumbo: {}° ({}) | X:{} Y:{} Z:{} | Intensidad:{}".format(
+        rumbo,
+        direccion_cardinal(rumbo),
+        compass.get_x(),
+        compass.get_y(),
+        compass.get_z(),
+        compass.get_field_strength()
+    ))
+
+
+# ------------------ Programa principal ------------------
+
+calibrar()                 # Calibración inicial
+brujula_activa = False
+display.show(Image.HEART)  # Estado de espera
+
+while True:
+    # Botón A: alterna la brújula
+    if button_a.was_pressed():
+        brujula_activa = not brujula_activa
+        if not brujula_activa:
+            display.show(Image.HEART)
+
+    # Botón B: recalibrar
+    if button_b.was_pressed():
+        calibrar()
+        brujula_activa = False
+        display.show(Image.HEART)
+
+    # Con la brújula activa, se lee y se muestra el rumbo
+    if brujula_activa:
+        mostrar_brujula()
+
+    sleep(100)
